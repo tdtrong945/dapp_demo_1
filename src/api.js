@@ -87,5 +87,31 @@ export const api = {
       method: 'POST'
     });
     return response.json();
+  },
+
+  // Package Requests
+  createPackageRequest: async (packageName, packagePrice) => {
+    const response = await fetch(`${API_BASE_URL}/member/package-request`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ packageName, packagePrice })
+    });
+    return response.json();
+  },
+
+  getPackageRequests: async () => {
+    const response = await fetch(`${API_BASE_URL}/admin/package-requests`, {
+      headers: getAuthHeaders()
+    });
+    return response.json();
+  },
+
+  updatePackageRequest: async (requestId, status) => {
+    const response = await fetch(`${API_BASE_URL}/admin/package-requests/${requestId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ status })
+    });
+    return response.json();
   }
 };

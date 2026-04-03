@@ -38,6 +38,23 @@ function createTables() {
       console.log('Members table created or already exists.');
     }
   });
+
+  db.run(`CREATE TABLE IF NOT EXISTS package_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    member_id INTEGER NOT NULL,
+    member_name TEXT NOT NULL,
+    package_name TEXT NOT NULL,
+    package_price TEXT NOT NULL,
+    status TEXT DEFAULT 'pending',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(member_id) REFERENCES members(id) ON DELETE CASCADE
+  )`, (err) => {
+    if (err) {
+      console.error('Error creating package_requests table:', err.message);
+    } else {
+      console.log('Package requests table created or already exists.');
+    }
+  });
 }
 
 // Middleware xác thực JWT
@@ -299,6 +316,82 @@ app.post('/api/setup-admin', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
+});
+
+// Member: Yêu cầu gói tập
+app.post('/api/member/package-request', authenticateToken, (req, res) => {
+  const { packageName, packagePrice } = req.body;
+
+  if (!packageName || !packagePrice) {
+    return res.status(400).json({ error: 'Package name and price are required' });
+  }
+
+  const memberId = req.user.id;
+  const memberName = req.user.username;
+
+  db.run(
+    `INSERT INTO package_requests (member_id, member_name, package_name, package_price) VALUES (?, ?, ?, ?)`,
+    [memberId, memberName, packageName, packagePrice],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+
+      res.status(201).json({
+        message: 'Package request created successfully',
+        requestId: this.lastID
+      });
+    }
+  );
+});
+
+// Admin: Lấy danh sách yêu cầu gói tập
+app.get('/api/admin/package-requests', authenticateToken, (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  db.all(
+    `SELECT * FROM package_requests ORDER BY created_at DESC`,
+    [],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+
+      res.json({ requests: rows });
+    }
+  );
+});
+
+// Admin: Cập nhật trạng thái yêu cầu gói tập
+app.put('/api/admin/package-requests/:id', authenticateToken, (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  const { status } = req.body;
+  const requestId = req.params.id;
+
+  if (!['pending', 'approved', 'rejected'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid status' });
+  }
+
+  db.run(
+    `UPDATE package_requests SET status = ? WHERE id = ?`,
+    [status, requestId],
+    function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Request not found' });
+      }
+
+      res.json({ message: 'Request updated successfully' });
+    }
+  );
 });
 
 app.listen(PORT, () => {

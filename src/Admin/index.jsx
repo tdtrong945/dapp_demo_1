@@ -6,12 +6,15 @@ export default function AdminDashboard() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('dashboard')
   const [members, setMembers] = useState([])
+  const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
     if (activeTab === 'members') {
       loadMembers()
+    } else if (activeTab === 'requests') {
+      loadRequests()
     }
   }, [activeTab])
 
@@ -33,13 +36,31 @@ export default function AdminDashboard() {
     }
   }
 
+  const loadRequests = async () => {
+    setLoading(true)
+    setError('')
+
+    try {
+      const result = await api.getPackageRequests()
+      if (result.error) {
+        setError(result.error)
+      } else {
+        setRequests(result.requests)
+      }
+    } catch (err) {
+      setError('Lỗi kết nối server.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleUpdateMember = async (memberId, updates) => {
     try {
       const result = await api.updateMember(memberId, updates)
       if (result.error) {
         setError(result.error)
       } else {
-        loadMembers() // Reload list
+        loadMembers()
       }
     } catch (err) {
       setError('Lỗi cập nhật member.')
@@ -54,10 +75,23 @@ export default function AdminDashboard() {
       if (result.error) {
         setError(result.error)
       } else {
-        loadMembers() // Reload list
+        loadMembers()
       }
     } catch (err) {
       setError('Lỗi xóa member.')
+    }
+  }
+
+  const handleUpdateRequest = async (requestId, status) => {
+    try {
+      const result = await api.updatePackageRequest(requestId, status)
+      if (result.error) {
+        setError(result.error)
+      } else {
+        loadRequests()
+      }
+    } catch (err) {
+      setError('Lỗi cập nhật yêu cầu.')
     }
   }
 
@@ -92,6 +126,14 @@ export default function AdminDashboard() {
           >
             02. Hội viên
           </button>
+          <button
+            onClick={() => setActiveTab('requests')}
+            className={`w-full text-left text-[10px] font-black uppercase tracking-[0.2em] transition-all ${
+              activeTab === 'requests' ? 'text-orange-500' : 'text-zinc-600 hover:text-zinc-300'
+            }`}
+          >
+            03. Yêu cầu gói tập
+          </button>
         </nav>
 
         <button onClick={logout} className="text-zinc-700 text-[10px] font-black uppercase hover:text-red-500 transition-colors text-left">
@@ -100,7 +142,7 @@ export default function AdminDashboard() {
       </aside>
 
       <main className="flex-1 ml-64 p-12">
-        {activeTab === 'dashboard' ? (
+        {activeTab === 'dashboard' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
             <h2 className="text-5xl font-black uppercase italic mb-12">Dashboard</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
@@ -116,11 +158,12 @@ export default function AdminDashboard() {
             </div>
             <div className="bg-zinc-900/20 border border-zinc-800 p-8">
               <h3 className="text-sm font-black uppercase mb-6 text-zinc-400 italic">Giao dịch gần đây</h3>
-              <div className="space-y-4">
-              </div>
+              <div className="space-y-4"></div>
             </div>
           </div>
-        ) : (
+        )}
+
+        {activeTab === 'members' && (
           <div className="animate-in fade-in duration-500">
             <h2 className="text-5xl font-black uppercase italic mb-12">Quản lý Hội viên</h2>
 
@@ -175,6 +218,74 @@ export default function AdminDashboard() {
                   {members.length === 0 && (
                     <div className="text-center py-10 text-zinc-500">
                       Chưa có thành viên nào.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'requests' && (
+          <div className="animate-in fade-in duration-500">
+            <h2 className="text-5xl font-black uppercase italic mb-12">Yêu cầu gói tập</h2>
+
+            {error && <div className="mb-6 p-4 bg-red-900/50 border border-red-800 rounded text-red-300">{error}</div>}
+
+            {loading ? (
+              <div className="text-center py-20">
+                <p className="text-zinc-400">Đang tải danh sách...</p>
+              </div>
+            ) : (
+              <div className="bg-zinc-900/20 border border-zinc-800 p-8">
+                <h3 className="text-sm font-black uppercase mb-6 text-zinc-400 italic">Danh sách yêu cầu ({requests.length})</h3>
+
+                <div className="space-y-4">
+                  {requests.map((request) => (
+                    <div key={request.id} className="bg-zinc-900/50 p-6 border border-zinc-800 rounded-sm">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h4 className="text-lg font-bold text-orange-500">{request.member_name}</h4>
+                          <p className="text-sm text-zinc-400">Gói: {request.package_name}</p>
+                          <p className="text-sm text-zinc-400">Giá: {request.package_price} VNĐ/Tháng</p>
+                          <p className="text-sm text-zinc-400">Ngày yêu cầu: {new Date(request.created_at).toLocaleDateString('vi-VN')}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <select
+                            value={request.status}
+                            onChange={(e) => handleUpdateRequest(request.id, e.target.value)}
+                            className={`border px-3 py-1 rounded text-sm font-bold ${
+                              request.status === 'approved' ? 'bg-green-900 border-green-800 text-green-300' :
+                              request.status === 'rejected' ? 'bg-red-900 border-red-800 text-red-300' :
+                              'bg-yellow-900 border-yellow-800 text-yellow-300'
+                            }`}
+                          >
+                            <option value="pending">Chờ duyệt</option>
+                            <option value="approved">Duyệt</option>
+                            <option value="rejected">Từ chối</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="text-sm">
+                        <span className={`font-bold ${
+                          request.status === 'approved' ? 'text-green-400' :
+                          request.status === 'rejected' ? 'text-red-400' :
+                          'text-yellow-400'
+                        }`}>
+                          Trạng thái: {
+                            request.status === 'approved' ? 'Đã duyệt' :
+                            request.status === 'rejected' ? 'Bị từ chối' :
+                            'Chờ duyệt'
+                          }
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+
+                  {requests.length === 0 && (
+                    <div className="text-center py-10 text-zinc-500">
+                      Không có yêu cầu nào.
                     </div>
                   )}
                 </div>

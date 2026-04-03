@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { api } from '../../api'
 
 const pricingData = {
   basic: {
@@ -24,13 +25,41 @@ const pricingData = {
 
 const Pricing = () => {
   const navigate = useNavigate()
-  // State để quản lý gói đang hiển thị
-  const [activeTab, setActiveTab] = useState('pro');
+  const [activeTab, setActiveTab] = useState('pro')
+  const [showModal, setShowModal] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
 
-  const currentPlan = pricingData[activeTab];
+  const currentPlan = pricingData[activeTab]
 
   const handleRegisterNow = () => {
-    navigate('/login')
+    const token = localStorage.getItem('token')
+    if (!token) {
+      navigate('/login')
+    } else {
+      setShowModal(true)
+    }
+  }
+
+  const handleSubmitRequest = async () => {
+    setLoading(true)
+    setMessage('')
+
+    try {
+      const result = await api.createPackageRequest(currentPlan.name, currentPlan.price)
+      if (result.error) {
+        setMessage(`Lỗi: ${result.error}`)
+      } else {
+        setMessage('✓ Yêu cầu được gửi thành công! Admin sẽ duyệt trong thời gian sớm nhất.')
+        setTimeout(() => {
+          setShowModal(false)
+        }, 2000)
+      }
+    } catch (err) {
+      setMessage('Lỗi kết nối server.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -87,6 +116,51 @@ const Pricing = () => {
           </div>
         </div>
 
+        {/* MODAL YÊU CẦU GÓI TẬP */}
+        {showModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 max-w-md w-full">
+              <h2 className="text-2xl font-black text-orange-500 mb-4">Yêu cầu gói tập</h2>
+
+              <div className="bg-zinc-950 p-4 rounded mb-4">
+                <p className="text-sm text-zinc-500 mb-1">Gói được chọn:</p>
+                <p className="text-xl font-bold text-white">{currentPlan.name}</p>
+                <p className="text-lg text-orange-500 font-black">{currentPlan.price} VNĐ/Tháng</p>
+              </div>
+
+              {message && (
+                <div className={`p-3 rounded mb-4 text-sm ${
+                  message.includes('✓') 
+                    ? 'bg-green-900/50 text-green-300' 
+                    : 'bg-red-900/50 text-red-300'
+                }`}>
+                  {message}
+                </div>
+              )}
+
+              <p className="text-zinc-400 text-sm mb-6">
+                Nhấn xác nhận để gửi yêu cầu. Admin sẽ xem xét và liên hệ với bạn trong thời gian sớm nhất.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowModal(false)}
+                  disabled={loading}
+                  className="flex-1 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded font-bold disabled:opacity-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleSubmitRequest}
+                  disabled={loading}
+                  className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded font-bold disabled:opacity-50"
+                >
+                  {loading ? 'Đang gửi...' : 'Xác nhận'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   )
