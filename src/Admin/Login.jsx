@@ -94,7 +94,7 @@ export default function Login() {
         </p>
 
         <p className="mt-3 text-xs text-zinc-500">
-          Bạn có thể dùng admin/admin123 hoặc user/user123 khi chưa dùng MetaMask.
+          admin/admin123 hoặc user/user123 .
         </p>
       </form>
     </div>

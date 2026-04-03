@@ -48,22 +48,17 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
               <div className="bg-zinc-900/50 p-8 border border-zinc-800 rounded-sm">
                 <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">Doanh thu</p>
-                <p className="text-3xl font-extrabold mt-2">$92,300</p>
               </div>
               <div className="bg-zinc-900/50 p-8 border border-zinc-800 rounded-sm">
                 <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">Hội viên</p>
-                <p className="text-3xl font-extrabold mt-2">1,248</p>
               </div>
               <div className="bg-zinc-900/50 p-8 border border-zinc-800 rounded-sm">
                 <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">Yêu cầu</p>
-                <p className="text-3xl font-extrabold mt-2">119</p>
               </div>
             </div>
             <div className="bg-zinc-900/20 border border-zinc-800 p-8">
               <h3 className="text-sm font-black uppercase mb-6 text-zinc-400 italic">Giao dịch gần đây</h3>
               <div className="space-y-4">
-                <div className="text-sm">#0001 - user01 - mua gói Platinum</div>
-                <div className="text-sm">#0002 - user02 - gia hạn gói Gold</div>
               </div>
             </div>
           </div>
