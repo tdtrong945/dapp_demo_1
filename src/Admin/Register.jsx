@@ -29,7 +29,7 @@ export default function Register() {
       return
     }
 
-    users[username] = { password, role: 'member' }
+    users[username] = { password, role: 'member', metamask: '' }
     localStorage.setItem('localUsers', JSON.stringify(users))
     setSuccess('Đăng ký thành công! Vui lòng đăng nhập.')
     setUsername('')

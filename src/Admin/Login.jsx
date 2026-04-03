@@ -10,19 +10,25 @@ export default function Login() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
+
     if (username === 'admin' && password === 'admin123') {
       localStorage.setItem('role', 'admin')
+      localStorage.setItem('currentUser', 'admin')
       navigate('/admin-portal')
       return
     }
 
-    if (username === 'user' && password === 'user123') {
-      localStorage.setItem('role', 'member')
-      navigate('/member-portal')
+    const users = JSON.parse(localStorage.getItem('localUsers') || '{}')
+    const user = users[username]
+
+    if (!user || user.password !== password) {
+      setError('Sai tên đăng nhập hoặc mật khẩu. Vui lòng thử lại.')
       return
     }
 
-    setError('Sai tên đăng nhập hoặc mật khẩu. Vui lòng thử lại.')
+    localStorage.setItem('role', user.role)
+    localStorage.setItem('currentUser', username)
+    navigate('/member-portal')
   }
 
   const handleMetamask = async () => {
@@ -35,13 +41,20 @@ export default function Login() {
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
       const address = accounts[0]?.toLowerCase() || ''
 
-      const adminAddress = '0xyour_admin_wallet'.toLowerCase() // Thay bằng địa chỉ admin thật
-      if (address === adminAddress) {
-        localStorage.setItem('role', 'admin')
-        navigate('/admin-portal')
+      const users = JSON.parse(localStorage.getItem('localUsers') || '{}')
+      const matchedUser = Object.entries(users).find(([, profile]) => profile.metamask?.toLowerCase() === address)
+
+      if (matchedUser) {
+        const [metaUserName, metaUserData] = matchedUser
+        localStorage.setItem('role', metaUserData.role)
+        localStorage.setItem('currentUser', metaUserName)
+        if (metaUserData.role === 'admin') {
+          navigate('/admin-portal')
+        } else {
+          navigate('/member-portal')
+        }
       } else {
-        localStorage.setItem('role', 'member')
-        navigate('/member-portal')
+        setError('Tài khoản MetaMask chưa liên kết. Vui lòng đăng nhập bằng tài khoản đã đăng ký và liên kết trong trang thành viên.')
       }
     } catch (err) {
       console.error(err)
