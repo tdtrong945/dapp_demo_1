@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { api } from '../api'
 
 export default function MemberDashboard() {
   const navigate = useNavigate()
@@ -7,22 +8,40 @@ export default function MemberDashboard() {
   const [metamaskAddress, setMetamaskAddress] = useState('')
   const [statusMsg, setStatusMsg] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const currentUser = localStorage.getItem('currentUser')
-    if (!currentUser) {
+    const token = localStorage.getItem('token')
+    if (!token) {
       navigate('/login')
       return
     }
 
-    setMemberName(currentUser)
-    const users = JSON.parse(localStorage.getItem('localUsers') || '{}')
-    const userData = users[currentUser]
-
-    if (userData?.metamask) {
-      setMetamaskAddress(userData.metamask)
-    }
+    loadMemberData()
   }, [navigate])
+
+  const loadMemberData = async () => {
+    try {
+      const result = await api.getCurrentMember()
+      if (result.error) {
+        if (result.error === 'Invalid token') {
+          localStorage.removeItem('token')
+          localStorage.removeItem('role')
+          localStorage.removeItem('currentUser')
+          navigate('/login')
+          return
+        }
+        setError(result.error)
+      } else {
+        setMemberName(result.user.username)
+        setMetamaskAddress(result.user.metamask_address || '')
+      }
+    } catch (err) {
+      setError('Lỗi kết nối server.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleLinkMetamask = async () => {
     setError('')
@@ -41,22 +60,14 @@ export default function MemberDashboard() {
         return
       }
 
-      const currentUser = localStorage.getItem('currentUser')
-      if (!currentUser) {
-        setError('Không tìm thấy tài khoản người dùng. Vui lòng đăng nhập lại.')
-        return
-      }
+      const result = await api.linkMetamask(address)
 
-      const users = JSON.parse(localStorage.getItem('localUsers') || '{}')
-      if (!users[currentUser]) {
-        setError('Tài khoản thành viên không tồn tại.')
-        return
+      if (result.error) {
+        setError(result.error)
+      } else {
+        setMetamaskAddress(address)
+        setStatusMsg('Liên kết MetaMask thành công!')
       }
-
-      users[currentUser].metamask = address
-      localStorage.setItem('localUsers', JSON.stringify(users))
-      setMetamaskAddress(address)
-      setStatusMsg('Liên kết MetaMask thành công!')
     } catch (err) {
       console.error(err)
       setError('Không thể kết nối MetaMask. Vui lòng thử lại.')
@@ -64,9 +75,18 @@ export default function MemberDashboard() {
   }
 
   const handleLogout = () => {
+    localStorage.removeItem('token')
     localStorage.removeItem('role')
     localStorage.removeItem('currentUser')
     navigate('/')
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white p-8 flex items-center justify-center">
+        <div className="text-xl">Đang tải...</div>
+      </div>
+    )
   }
 
   return (

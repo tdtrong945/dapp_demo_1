@@ -1,16 +1,62 @@
-# React + Vite
+# Demo App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Ứng dụng demo với React frontend và Node.js backend, tích hợp MetaMask.
 
-Currently, two official plugins are available:
+## Cấu trúc
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```
+demo/
+├── backend/          # Node.js + Express + SQLite
+├── src/             # React frontend
+├── public/          # Static assets
+└── package.json     # Frontend dependencies
+```
 
-## React Compiler
+## Cài đặt
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# Cài đặt frontend dependencies
+npm install
 
-## Expanding the ESLint configuration
+# Cài đặt backend dependencies
+cd backend
+npm install
+cd ..
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Chạy ứng dụng
+
+### Chạy cả frontend và backend cùng lúc
+```bash
+npm run dev:full
+```
+
+### Hoặc chạy riêng lẻ
+
+Frontend (http://localhost:5173):
+```bash
+npm run dev
+```
+
+Backend (http://localhost:3001):
+```bash
+npm run server
+```
+
+## Tài khoản mặc định
+
+- **Admin**: username: `admin`, password: `admin123`
+- **Member**: Đăng ký tài khoản mới
+
+## Tính năng
+
+- ✅ Đăng ký/Đăng nhập
+- ✅ Liên kết MetaMask
+- ✅ Quản lý thành viên (Admin)
+- ✅ Database SQLite
+- ✅ JWT Authentication
+- ✅ Responsive UI
+
+## API Documentation
+
+Xem `backend/README.md` để biết chi tiết về API endpoints.

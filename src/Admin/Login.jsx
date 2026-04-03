@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { api } from '../api'
 
 export default function Login() {
   const [username, setUsername] = useState('')
@@ -8,27 +9,32 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    setError('')
+    setLoading(true)
 
-    if (username === 'admin' && password === 'admin123') {
-      localStorage.setItem('role', 'admin')
-      localStorage.setItem('currentUser', 'admin')
-      navigate('/admin-portal')
-      return
+    try {
+      const result = await api.login(username, password)
+
+      if (result.error) {
+        setError(result.error)
+      } else {
+        localStorage.setItem('token', result.token)
+        localStorage.setItem('role', result.user.role)
+        localStorage.setItem('currentUser', result.user.username)
+
+        if (result.user.role === 'admin') {
+          navigate('/admin-portal')
+        } else {
+          navigate('/member-portal')
+        }
+      }
+    } catch (err) {
+      setError('Lỗi kết nối server. Vui lòng thử lại.')
+    } finally {
+      setLoading(false)
     }
-
-    const users = JSON.parse(localStorage.getItem('localUsers') || '{}')
-    const user = users[username]
-
-    if (!user || user.password !== password) {
-      setError('Sai tên đăng nhập hoặc mật khẩu. Vui lòng thử lại.')
-      return
-    }
-
-    localStorage.setItem('role', user.role)
-    localStorage.setItem('currentUser', username)
-    navigate('/member-portal')
   }
 
   const handleMetamask = async () => {
@@ -41,20 +47,25 @@ export default function Login() {
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
       const address = accounts[0]?.toLowerCase() || ''
 
-      const users = JSON.parse(localStorage.getItem('localUsers') || '{}')
-      const matchedUser = Object.entries(users).find(([, profile]) => profile.metamask?.toLowerCase() === address)
+      if (!address) {
+        setError('Không tìm thấy địa chỉ MetaMask.')
+        return
+      }
 
-      if (matchedUser) {
-        const [metaUserName, metaUserData] = matchedUser
-        localStorage.setItem('role', metaUserData.role)
-        localStorage.setItem('currentUser', metaUserName)
-        if (metaUserData.role === 'admin') {
+      const result = await api.loginWithMetamask(address)
+
+      if (result.error) {
+        setError(result.error)
+      } else {
+        localStorage.setItem('token', result.token)
+        localStorage.setItem('role', result.user.role)
+        localStorage.setItem('currentUser', result.user.username)
+
+        if (result.user.role === 'admin') {
           navigate('/admin-portal')
         } else {
           navigate('/member-portal')
         }
-      } else {
-        setError('Tài khoản MetaMask chưa liên kết. Vui lòng đăng nhập bằng tài khoản đã đăng ký và liên kết trong trang thành viên.')
       }
     } catch (err) {
       console.error(err)
@@ -86,8 +97,8 @@ export default function Login() {
           />
         </div>
 
-        <button type="submit" className="mt-4 w-full px-4 py-3 bg-orange-500 hover:bg-orange-600 rounded-lg font-bold">
-          Đăng nhập
+        <button type="submit" className="mt-4 w-full px-4 py-3 bg-orange-500 hover:bg-orange-600 rounded-lg font-bold" disabled={loading}>
+          {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
         </button>
 
         <button

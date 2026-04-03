@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { api } from '../api'
 
 export default function Register() {
   const [username, setUsername] = useState('')
@@ -7,38 +8,46 @@ export default function Register() {
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setSuccess('')
+    setLoading(true)
 
     if (!username || !password) {
       setError('Vui lòng điền đầy đủ thông tin.')
+      setLoading(false)
       return
     }
     if (password !== confirm) {
       setError('Mật khẩu và xác nhận mật khẩu không khớp.')
+      setLoading(false)
       return
     }
 
-    const users = JSON.parse(localStorage.getItem('localUsers') || '{}')
-    if (users[username]) {
-      setError('Tài khoản đã tồn tại. Vui lòng chọn tên khác.')
-      return
+    try {
+      const result = await api.register(username, password)
+
+      if (result.error) {
+        setError(result.error)
+      } else {
+        setSuccess('Đăng ký thành công! Vui lòng đăng nhập.')
+        setUsername('')
+        setPassword('')
+        setConfirm('')
+
+        setTimeout(() => {
+          navigate('/login')
+        }, 1200)
+      }
+    } catch (err) {
+      setError('Lỗi kết nối server. Vui lòng thử lại.')
+    } finally {
+      setLoading(false)
     }
-
-    users[username] = { password, role: 'member', metamask: '' }
-    localStorage.setItem('localUsers', JSON.stringify(users))
-    setSuccess('Đăng ký thành công! Vui lòng đăng nhập.')
-    setUsername('')
-    setPassword('')
-    setConfirm('')
-
-    setTimeout(() => {
-      navigate('/login')
-    }, 1200)
   }
 
   return (
@@ -69,8 +78,8 @@ export default function Register() {
           className="w-full mb-4 px-4 py-3 rounded-lg bg-zinc-900 border border-zinc-700 focus:outline-none"
         />
 
-        <button className="w-full px-4 py-3 bg-orange-500 hover:bg-orange-600 rounded-lg font-bold" type="submit">
-          Đăng ký
+        <button className="w-full px-4 py-3 bg-orange-500 hover:bg-orange-600 rounded-lg font-bold" type="submit" disabled={loading}>
+          {loading ? 'Đang đăng ký...' : 'Đăng ký'}
         </button>
         <button
           type="button"
